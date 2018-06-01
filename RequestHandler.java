@@ -122,6 +122,7 @@ public class RequestHandler {
         } else if (fileName.endsWith("png")) {
             return "image/png";
         }
+
         return "text/plain";
     }
 }
