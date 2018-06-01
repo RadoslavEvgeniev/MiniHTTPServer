@@ -9,6 +9,7 @@ public class HttpRequestImpl implements HttpRequest {
 
     private Map<String, String> headers;
     private Map<String, String> bodyParameters;
+    private Map<String, HttpCookie> cookies;
     private String method;
     private String requestUrl;
     private boolean isResource;
@@ -18,6 +19,7 @@ public class HttpRequestImpl implements HttpRequest {
         this.initRequestUrl(requestContent);
         this.initHeaders(requestContent);
         this.initBodyParameters(requestContent);
+        this.initCookies();
     }
 
     private void initMethod(String requestContent) {
@@ -54,6 +56,19 @@ public class HttpRequestImpl implements HttpRequest {
         }
     }
 
+    private void initCookies() {
+        if (!this.headers.containsKey("Cookie")) {
+            return;
+        }
+        String cookiesHeader = this.headers.get("Cookie");
+        String[] allCookies = cookiesHeader.split(";\\s");
+        this.cookies = new HashMap<>();
+        for (int i = 0; i < allCookies.length; i++) {
+            String[] cookieNameValuePair = allCookies[i].split("=");
+            this.addCookie(cookieNameValuePair[0], cookieNameValuePair[1]);
+        }
+    }
+
     @Override
     public Map<String, String> getHeaders() {
         return this.headers;
@@ -62,6 +77,11 @@ public class HttpRequestImpl implements HttpRequest {
     @Override
     public Map<String, String> getBodyParameters() {
         return this.bodyParameters;
+    }
+
+    @Override
+    public Map<String, HttpCookie> getCookies() {
+        return this.cookies;
     }
 
     @Override
@@ -92,6 +112,10 @@ public class HttpRequestImpl implements HttpRequest {
     @Override
     public void addBodyParameter(String parameter, String value) {
         this.bodyParameters.putIfAbsent(parameter, value);
+    }
+
+    public void addCookie(String name, String value) {
+        this.cookies.putIfAbsent(name, new HttpCookieImpl(name, value));
     }
 
     @Override

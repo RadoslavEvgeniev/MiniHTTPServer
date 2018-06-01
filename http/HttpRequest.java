@@ -8,6 +8,8 @@ public interface HttpRequest {
 
     Map<String, String> getBodyParameters();
 
+    Map<String, HttpCookie> getCookies();
+
     String getMethod();
 
     void setMethod(String method);

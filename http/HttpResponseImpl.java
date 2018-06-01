@@ -8,12 +8,14 @@ import java.util.Map;
 public class HttpResponseImpl implements HttpResponse {
 
     private Map<String, String> headers;
+    private Map<String, HttpCookie> cookies;
     private HttpStatus status;
     private byte[] content;
 
     public HttpResponseImpl() {
         this.setContent(new byte[0]);
         this.headers = new HashMap<>();
+        this.cookies = new HashMap<>();
     }
 
     private byte[] getHeadersBytes() {
@@ -23,6 +25,16 @@ public class HttpResponseImpl implements HttpResponse {
 
         for (Map.Entry<String, String> header : this.getHeaders().entrySet()) {
             result.append(header.getKey()).append(": ").append(header.getValue()).append(System.lineSeparator());
+        }
+
+        if (!this.cookies.isEmpty()) {
+            result.append("Set-Cookie: ");
+
+            for (HttpCookie httpCookie : this.cookies.values()) {
+                result.append(httpCookie.toString()).append("; ");
+            }
+            result.replace(result.length() - 2, result.length(), "");
+            result.append(System.lineSeparator());
         }
 
         result.append(System.lineSeparator());
@@ -76,5 +88,10 @@ public class HttpResponseImpl implements HttpResponse {
     @Override
     public void addHeader(String header, String value) {
         this.headers.putIfAbsent(header, value);
+    }
+
+    @Override
+    public void addCookie(String name, String value) {
+        this.cookies.putIfAbsent(name, new HttpCookieImpl(name, value));
     }
 }

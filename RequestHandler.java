@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 
 public class RequestHandler {
 
@@ -45,8 +46,9 @@ public class RequestHandler {
         return this.httpResponse.getBytes();
     }
 
-    private byte[] redirect(byte[] content) {
+    private byte[] redirect(byte[] content, String location) {
         this.httpResponse.setStatus(HttpStatus.SeeOther);
+        this.httpResponse.addHeader("Location", location);
         this.httpResponse.setContent(content);
         return this.httpResponse.getBytes();
     }
@@ -105,7 +107,17 @@ public class RequestHandler {
         if (this.httpRequest.getRequestUrl().equals("/")) {
             return this.processPageRequest("/index");
         } else if (this.httpRequest.getRequestUrl().equals("/login")) {
+            this.httpResponse.addCookie("username", "Pesho");
             return this.processPageRequest(this.httpRequest.getRequestUrl());
+        } else if (this.httpRequest.getRequestUrl().equals("/logout")) {
+            this.httpResponse.addCookie("username", "deleted; expires=Thu, 01 Jan 1970 00:00:00 GMT");
+            return this.ok("Deleted".getBytes());
+        } else if (this.httpRequest.getRequestUrl().equals("/forbidden")) {
+            if (!this.httpRequest.getCookies().containsKey("username")) {
+                return this.redirect("you must login".getBytes(), "/");
+            }
+
+            return this.ok("Hello, Pesho!".getBytes());
         }
 
         return this.processResourceRequest();
