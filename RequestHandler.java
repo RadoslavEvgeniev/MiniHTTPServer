@@ -6,9 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 
 public class RequestHandler {
+
+    private static final String HTML_EXTENSION_AND_SEPARATOR = ".html";
 
     private HttpRequest httpRequest;
     private HttpResponse httpResponse;
@@ -79,20 +80,48 @@ public class RequestHandler {
         return this.ok(result);
     }
 
-    private byte[] processGetRequest() {
-//        if (this.httpRequest.getRequestUrl().equals("/index")) {
-//            return new byte[0];
-//        }
+    private byte[] processPageRequest(String page) {
+        String pagePath = WebConstants.PAGES_FOLDER_PATH + page + HTML_EXTENSION_AND_SEPARATOR;
 
-        if (this.httpRequest.isResource()) {
-            return this.processResourceRequest();
+        File file = new File(pagePath);
+        if (!file.exists() || file.isDirectory()) {
+            return this.notFound("Page not found!".getBytes());
         }
 
-        return this.ok(new byte[0]);
+        byte[] result = null;
+
+        try {
+            result = Files.readAllBytes(Paths.get(pagePath));
+        } catch (IOException e) {
+            this.internalServerError("Something went wrong!".getBytes());
+        }
+
+        this.httpResponse.addHeader("Content-Type", this.getMimeType(file));
+
+        return this.ok(result);
+    }
+
+    private byte[] processGetRequest() {
+        if (this.httpRequest.getRequestUrl().equals("/")) {
+            return this.processPageRequest("/index");
+        } else if (this.httpRequest.getRequestUrl().equals("/login")) {
+            return this.processPageRequest(this.httpRequest.getRequestUrl());
+        }
+
+        return this.processResourceRequest();
     }
 
     private String getMimeType(File file) {
-
-        return null;
+        String fileName = file.getName();
+        if (fileName.endsWith("css")) {
+            return "text/css";
+        } else if (fileName.endsWith("html")) {
+            return "text/html";
+        } else if (fileName.endsWith("jpg") || fileName.endsWith("jpeg")) {
+            return "image/jpeg";
+        } else if (fileName.endsWith("png")) {
+            return "image/png";
+        }
+        return "text/plain";
     }
 }
