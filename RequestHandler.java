@@ -14,18 +14,25 @@ public class RequestHandler {
 
     private HttpRequest httpRequest;
     private HttpResponse httpResponse;
+    private HttpSessionStorage sessionStorage;
 
-    public RequestHandler() {}
+    public RequestHandler(HttpSessionStorage sessionStorage) {
+        this.sessionStorage = sessionStorage;
+    }
 
     public byte[] handleRequest(String requestContent) {
         this.httpRequest = new HttpRequestImpl(requestContent);
         this.httpResponse = new HttpResponseImpl();
 
+        byte[] result = null;
+
         if (this.httpRequest.getMethod().equals("GET")) {
-            return this.processGetRequest();
+            result = this.processGetRequest();
         }
 
-        return this.ok(new byte[0]);
+        this.sessionStorage.refreshSessions();
+
+        return result;
     }
 
     private byte[] ok(byte[] content) {
@@ -105,22 +112,46 @@ public class RequestHandler {
 
     private byte[] processGetRequest() {
         if (this.httpRequest.getRequestUrl().equals("/")) {
+            //INDEX
             return this.processPageRequest("/index");
         } else if (this.httpRequest.getRequestUrl().equals("/login")) {
-            this.httpResponse.addCookie("username", "Pesho");
+            // LOGIN
+            this.login();
             return this.processPageRequest(this.httpRequest.getRequestUrl());
         } else if (this.httpRequest.getRequestUrl().equals("/logout")) {
-            this.httpResponse.addCookie("username", "deleted; expires=Thu, 01 Jan 1970 00:00:00 GMT");
+            // LOGOUT
+            if (!this.httpRequest.getCookies().containsKey("Javache")) {
+                return this.redirect("you must login".getBytes(), "/");
+            }
+            this.logout();
             return this.ok("Deleted".getBytes());
         } else if (this.httpRequest.getRequestUrl().equals("/forbidden")) {
-            if (!this.httpRequest.getCookies().containsKey("username")) {
+            // FORBIDDEN
+            if (!this.httpRequest.getCookies().containsKey("Javache")) {
                 return this.redirect("you must login".getBytes(), "/");
             }
 
-            return this.ok("Hello, Pesho!".getBytes());
+            String sessionId = this.httpRequest.getCookies().get("Javache").getValue();
+            HttpSession session = this.sessionStorage.getSessionById(sessionId);
+            String username = session.getAttributes().get("username").toString();
+            return this.ok(("Hello, " + username + "!").getBytes());
         }
 
         return this.processResourceRequest();
+    }
+
+    private void logout() {
+        String sessionId = this.httpRequest.getCookies().get("Javache").getValue();
+        this.sessionStorage.getSessionById(sessionId).invalidate();
+        this.httpResponse.addCookie("Javache", "deleted; expires=Thu, 01 Jan 1970 00:00:00 GMT");
+    }
+
+    private void login() {
+        HttpSession session = new HttpSessionImpl();
+        session.addAttribute("username", "Pesho");
+        this.sessionStorage.addSession(session);
+
+        this.httpResponse.addCookie("Javache", session.getId());
     }
 
     private String getMimeType(File file) {

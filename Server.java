@@ -1,5 +1,8 @@
 package javache;
 
+import javache.http.HttpSessionStorage;
+import javache.http.HttpSessionStorageImpl;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -30,10 +33,11 @@ public class Server {
 
         this.server.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
 
+        HttpSessionStorage serverHttpSessionStorage = new HttpSessionStorageImpl();
         while (true) {
             try (Socket clientSocket = this.server.accept()) {
                 clientSocket.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
-                ConnectionHandler connectionHandler = new ConnectionHandler(clientSocket, new RequestHandler());
+                ConnectionHandler connectionHandler = new ConnectionHandler(clientSocket, new RequestHandler(serverHttpSessionStorage));
                 FutureTask<?> task = new FutureTask<>(connectionHandler, null);
                 task.run();
             } catch (SocketTimeoutException ste) {
