@@ -92,6 +92,7 @@ public class RequestHandler {
     }
 
     private String getMimeType(File file) {
+
         return null;
     }
 }
